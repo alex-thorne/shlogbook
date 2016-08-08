@@ -28,13 +28,21 @@ while [ -h "$shlog_path" ]; do
   fi
 done
 
-echo "$shlog_home"
+
+echo "$shlog_home" 
+
+
+
+
 config="$shlog_home/.config"
+
 if [ -e "$config" ]; then
   source $config
 else 
   default_config
 fi
+
+
 
 ## main ##
 
