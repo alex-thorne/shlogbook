@@ -8,58 +8,51 @@ GREEN=$(tput setaf 2)
 YELLOW=$(tput setaf 3)
 NORMAL=$(tput sgr0) 
 
+default_config() {
+  logbook="${HOME}/.shlogbook"
+}
+
 _day="$(date +%F)"
 _daytime="$(date +%T)"
-TIMESTAMP="$_day at $_daytime"
+TIMESTAMP="$_day at $_daytime" #TODO there must be a better way...
 
-#resolve shlogbook home dir
-SOURCE="${BASH_SOURCE[0]}"
-while [ -h "$SOURCE" ]; do 
-  TARGET="$(readlink "$SOURCE")"
+#resolve shlogbook home
+shlog_path="${BASH_SOURCE[0]}"
+while [ -h "$shlog_path" ]; do 
+  TARGET="$(readlink "$shlog_path")"
   if [[ $TARGET == /* ]]; then 
-    SOURCE="$TARGET"
+    shlog_path="$TARGET"
   else
-    DIR="$( dirname "$SOURCE" )"
-    SOURCE="$DIR/$TARGET" 
+    shlog_home="$( shlog_homename "$shlog_path" )"
+    shlog_path="$shlog_home/$TARGET" 
   fi
 done
 
-#TODO - check config on run!
-#config="$DIR/.config"
-#if [ -e "$config" ]; then
-#  source $config
-#else 
-#  default_config
-#fi
-#
-#default_config() {
-#  #TODO
-#}
+echo "$shlog_home"
+config="$shlog_home/.config"
+if [ -e "$config" ]; then
+  source $config
+else 
+  default_config
+fi
 
-# optional --message param, to allow logging with reference message
-# TODO this should be done by parsing cl args, this solution is lazy and naive, see
-# http://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash
-msg=${2}
+## main ##
 
-#TODO this should write to tmp file:
 get_last() {
-  lastcommand=$(fc -lnr -1 | sed '1s/^[[:space:]]*//')
-  #write to temp file!
+  lastcommand=$(fc -lnr -1 | sed '1s/^[[:space:]]*//')|mktemp /tmp/sb.lastcommand.XXXXX
+  echo "$lastcommand" 
+  #TODO DEBUG - remove echo 
 }
 
-#TODO should be pulled from tmp file!
 display_last() {
   echo "$lastcommand"
 }
 
 log_last() {
-  if [ ! -z "$lastcommand" ]; then 
-#    echo -e "$lastcommand added to $logbook" && echo "$lastcommand">>"$logbook"
-  elif [ -z "$lastcommand" ]; then
-    lastcommand=$(fc -lnr -1 | sed '1s/^[[:space:]]*//')
-#    echo -e "$lastcommand added to $logbook" && echo "$lastcommand">>"$logbook"
+  if [ -z "$lastcommand" ]; then
+    lastcommand=$(fc -lnr -1 | sed '1s/^[[:space:]]*//')|mktemp /tmp/sb.lastcommand.XXXXX
   else
-    echo -e "${RED}error logging command!${NORMAL}"
+    echo -e "${RED}err getting last command!${NORMAL}"
     exit -1
   fi
   if [ $2 -eq 1 ]; then
@@ -71,14 +64,16 @@ log_last() {
   fi
   echo -e "\n----- $TIMESTAMP -----">>"$logbook"
   echo -e "\n$lastcommand">>"$logbook"
-  if [ -z "$commit_message" -a "$commit_message" = " " ]; then
-  echo -e "\n$commit_message">>"$logbook"
-  echo -e "\n${GREEN}$lastcommand logged!${NORMAL}"
-  logbook=""
-  commit_message=""
+  if [ $2 -eq 1 ]; then
+    echo -e "\n$commit_message">>"$logbook"
+  fi
+  echo -e "\n$lastcommand! ${GREEN}added to shlogbook!${NORMAL}"
+  exit 0
 }
 
+## end main ##
 
+## shlogbook accepts arguments! ##
 while [ $# -gt 0 ]; do
   case "$1" in
     -g|--display)
@@ -90,27 +85,16 @@ while [ $# -gt 0 ]; do
     -m|--message)
       commit_message=1
       ;;
-    -c|--config)
+    -c|--config) #TODO allow for in-line shlogbook config 
       CONFFILE="$1"
       shift
       if [ ! -f $CONFFILE ]; then
-        echo "Error reading config file"
-        exit $E_CONFIG  # Error loading config 
+        echo "${RED}Error reading shlogbook config file${NORMAL}"
+        exit -1  # TODO error handling
       fi
       ;;
   esac
-  shift       # Check next set of parameters.
+  shift  # Check next set of parameters.
 done
 
-case $1 in
-  get)
-    getlast
-    ;;
-  log)
-    loglast
-    ;;
-  *)
-    echo -e "Usage: {${GREEN}get${NORMAL}|${YELLOW}log${NORMAL}."
-    ;;
-esac
 exit 0
