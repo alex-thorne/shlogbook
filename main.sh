@@ -44,6 +44,9 @@ else
   exit -1
 fi
 
+
+
+
 ## main ##
 
 get_last() {
@@ -52,8 +55,7 @@ get_last() {
 }
 
 main() {
-  lst_cmd=$(tail -n2 $hist_file | head -n1)
- 	echo -e "\n\n\n $lst_cmd \n\n\n"
+  lst_cmd=$(tail -n2 $hist_file|head -n1|sed -n -e 's/^.*;//p')
   if [[ commit_message -eq 1 ]]; then
     read cmmt_msg
     if [[ -z "$cmmt_msg" ]]; then #FIXME this still allows for blank ie " " message?
@@ -83,7 +85,9 @@ main() {
 ## end main ##
 
 ## shlogbook accepts arguments! ##
+#TODO CHANGE TO GET OPTS! (otherwise eg '[shlogbook] -vm' is not supported!
 #TODO alphabetize and document
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -v|--verbose)
@@ -102,7 +106,7 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     -V|--verbose-logging)
-      verbose_log=1 #Generously shows user an output
+      verbose_log=1 #additional environment variables added to log entry
       ;;
     -c|--config) #TODO allow for in-line shlogbook config 
       CONFFILE="$1"
