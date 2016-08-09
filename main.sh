@@ -47,13 +47,13 @@ fi
 ## main ##
 
 get_last() {
-  lst_cmd=$(tail -n2 $hist_file | head -n1 | mktemp /tmp/sb.lastcommand.XXX)
+  lst_cmd=$(tail -n2 $hist_file | head -n1)
   #lst_cmd=$(fc -lnr -1|sed '1s/^[[:space:]]*//'|mktemp /tmp/sb.lastcommand.XXX)
 }
 
 main() {
-  get_last
-  #	echo -e "\n\n\n $lst_cmd \n\n\n"
+  lst_cmd=$(tail -n2 $hist_file | head -n1)
+ 	echo -e "\n\n\n $lst_cmd \n\n\n"
   if [[ commit_message -eq 1 ]]; then
     read cmmt_msg
     if [[ -z "$cmmt_msg" ]]; then #FIXME this still allows for blank ie " " message?
