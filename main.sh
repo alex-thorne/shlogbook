@@ -1,13 +1,9 @@
 #!/bin/bash
-# alex thorne 07/12/2016
+# 07/12/2016 github.com/alex-thorne
 # simple logging utility for interactive shell sessions 
-
-BLUE=$(tput setaf 4)
 RED=$(tput setaf 1)
 GREEN=$(tput setaf 2)
-YELLOW=$(tput setaf 3)
-NORMAL=$(tput sgr0) 
-
+NORMAL=$(tput sgr0)
 default_config() {
   logbook="${HOME}/.shlogbook"
   myhost=$(hostname)
@@ -15,8 +11,7 @@ default_config() {
 
 _day="$(date +%F)"
 _daytime="$(date +%T)"
-TIMESTAMP="$_day at $_daytime" #TODO there must be a better way...
-VERBOSE_STAMP=""
+TIMESTAMP="$_day at $_daytime" #TODO i'm sure there's a better way to do this.
 
 #resolve shlogbook home
 SOURCE="${BASH_SOURCE[0]}"
@@ -40,26 +35,17 @@ if [[ ${SHELL} == *"zsh"* ]]; then
 elif [[ ${SHELL} == *"bash"* ]]; then
   hist_file="${HOME}/.bash_history"
 else
-  echo "please configure history file"
+  echo "error reading \$HISTFILE please configure history file"
   exit -1
 fi
 
-
-
-
 ## main ##
-
-get_last() {
-  lst_cmd=$(tail -n2 $hist_file | head -n1)
-  #lst_cmd=$(fc -lnr -1|sed '1s/^[[:space:]]*//'|mktemp /tmp/sb.lastcommand.XXX)
-}
-
 main() {
   lst_cmd=$(tail -n2 $hist_file|head -n1|sed -n -e 's/^.*;//p')
-  if [[ commit_message -eq 1 ]]; then
-    read cmmt_msg
-    if [[ -z "$cmmt_msg" ]]; then #FIXME this still allows for blank ie " " message?
-      echo "<msg> missing or misformed, use without -m|--message to skip"
+  if [[ log_with_message -eq 1 ]]; then
+    read log_message
+    if [[ -z "${log_message// }" ]]; then 
+      echo "Aborting shlogging due to empty message."
       exit -1
     fi
   fi
@@ -70,68 +56,51 @@ main() {
     echo -e "\n----- $TIMESTAMP -----">>"$logbook"
   fi	
   echo -e "\n$lst_cmd">>"$logbook"
-  if [[ $commit_message -eq 1 ]]; then
-    echo -e "\n$cmmt_msg">>"$logbook"
+  if [[ $log_with_message -eq 1 ]]; then
+    echo -e "\n$log_message">>"$logbook"
   fi
   if [[ verbose_out -eq 1 ]]; then
     if [[ verbose_log -eq 1 ]]; then
       echo -e "\n$verbose_log"
     fi		
-    echo -e "\n$lst_cmd! \n${GREEN}added to shlogbook!${NORMAL}"
+    echo -e "\n$lst_cmd!"
+    if [[ $log_with_message -eq 1 ]]; then
+      echo -e "\n$log_with_message"     
+    fi
+    echo -e "\n${GREEN}added to shlogbook!${NORMAL}"
   fi	
   exit 0
 }
-
 ## end main ##
 
 ## shlogbook accepts arguments! ##
-#TODO CHANGE TO GET OPTS! (otherwise eg '[shlogbook] -vm' is not supported!
-#TODO alphabetize and document
+OPTIND=1 
 
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    -v|--verbose)
-      verbose_out=1 #Generously shows user an output
-      shift
-      ;;
-    -r|--range)  #TODO (support selection from fc -lnr -(>1)items)
-      shift
-      ;;
-    -t|--test) #TODO runs 'dry-run' with option to log after displaying output
-      dry_run=1
-      shift
-      ;;
-    -m|--message)
-      commit_message=1
-      shift
-      ;;
-    -V|--verbose-logging)
-      verbose_log=1 #additional environment variables added to log entry
-      ;;
-    -c|--config) #TODO allow for in-line shlogbook config 
-      CONFFILE="$1"
-      shift
-      if [[ ! -f $CONFFILE ]]; then
-        echo "${RED}Error reading shlogbook config file${NORMAL}"
-        exit -1  # TODO error handling
-      fi
-      ;;
-    -h|--help)
-      cat "$DIR/help.txt"
-      ;;
-    --default) # End of all options
-      shift
-      ;;
-    -*)
-      echo "Error: Unknown option: $1" >&2
-      exit 1
-      ;;
-    *)
-      echo -e "Invalid option ("shlogbook --help" for help)"
+verbose_out=0
+verbose_log=0
+test_run=0
+log_with_message=0
+
+while getopts "h?vf:" opt; do
+  case "$opt" in
+    h|\?)
+      show_help
       exit 0
       ;;
+    v)  verbose_out=1
+      ;;
+    V)  verbose_log=1
+      ;;
+    t)  test_run=1
+      ;;
+    m)  log_message=$OPTARG    
+      log_with_message=1
+      ;;
   esac
-  shift  # Check next set of parameters.
 done
+
+shift $((OPTIND-1))
+
+[ "$1" = "--" ] && shift
 
 main
