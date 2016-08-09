@@ -1,0 +1,6 @@
+usage: shlog [parameters]
+                [options]
+       shlog -v | Displays verbose output
+       shlog -d | More detailed logging
+       shlog -m | Include message "<msg>" in log entry
+       shlog -t | Display shlog entry before logging

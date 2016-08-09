@@ -1,19 +1,7 @@
 #!/bin/bash
 # 07/12/2016 github.com/alex-thorne
 # simple logging utility for interactive shell sessions 
-RED=$(tput setaf 1)
-GREEN=$(tput setaf 2)
-NORMAL=$(tput sgr0)
-default_config() {
-  logbook="${HOME}/.shlogbook"
-  myhost=$(hostname)
-}
 
-_day="$(date +%F)"
-_daytime="$(date +%T)"
-TIMESTAMP="$_day at $_daytime" #TODO i'm sure there's a better way to do this.
-
-#resolve shlogbook home
 SOURCE="${BASH_SOURCE[0]}"
 while [ -h "$SOURCE" ]; do 
   DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
@@ -21,6 +9,15 @@ while [ -h "$SOURCE" ]; do
   [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" 
 done
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+
+show_help() {
+  cat $DIR/.help.txt 
+}
+
+default_config() {
+  logbook="${HOME}/.shlogbook"
+  myhost=$(hostname)
+}
 
 config="$DIR/.config"
 if [[ -e "$config" ]]; then
@@ -43,31 +40,29 @@ fi
 main() {
   lst_cmd=$(tail -n2 $hist_file|head -n1|sed -n -e 's/^.*;//p')
   if [[ log_with_message -eq 1 ]]; then
-    read log_message
     if [[ -z "${log_message// }" ]]; then 
       echo "Aborting shlogging due to empty message."
       exit -1
     fi
   fi
-  if [[ verbose_log -eq 1 ]]; then
+  if [[ detailed_logging -eq 1 ]]; then
     verbose_entry="$(date) $USER $myhost $SESSION $SHELL" 
-    echo "\n--- $verbose_entry ---">>$logbook
+    echo -e "\n[ $verbose_entry ]">>$logbook
   else
-    echo -e "\n----- $TIMESTAMP -----">>"$logbook"
+    echo -e "\n[ $(date +%F\ %T) ]">>"$logbook"
   fi	
-  echo -e "\n$lst_cmd">>"$logbook"
   if [[ $log_with_message -eq 1 ]]; then
-    echo -e "\n$log_message">>"$logbook"
+    echo -e "$log_message">>"$logbook"
   fi
-  if [[ verbose_out -eq 1 ]]; then
-    if [[ verbose_log -eq 1 ]]; then
-      echo -e "\n$verbose_log"
+  echo -e "\n   $ $lst_cmd">>"$logbook"
+  if [[ verbose -eq 1 ]]; then
+    if [[ detailed_logging -eq 1 ]]; then
+      echo -e "[ $verbose_entry ]"
     fi		
-    echo -e "\n$lst_cmd!"
     if [[ $log_with_message -eq 1 ]]; then
-      echo -e "\n$log_with_message"     
+      echo -e "$log_message"     
     fi
-    echo -e "\n${GREEN}added to shlogbook!${NORMAL}"
+    echo -e "   $ $lst_cmd!"
   fi	
   exit 0
 }
@@ -76,20 +71,20 @@ main() {
 ## shlogbook accepts arguments! ##
 OPTIND=1 
 
-verbose_out=0
-verbose_log=0
+verbose=0
+detailed_logging=0
 test_run=0
 log_with_message=0
 
-while getopts "h?vf:" opt; do
+while getopts "h?vdtm:" opt; do
   case "$opt" in
     h|\?)
       show_help
       exit 0
       ;;
-    v)  verbose_out=1
+    v)  verbose=1
       ;;
-    V)  verbose_log=1
+    d)  detailed_logging=1
       ;;
     t)  test_run=1
       ;;
