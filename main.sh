@@ -66,7 +66,10 @@ main() {
   fi	
   exit 0
 }
-## end main ##
+
+search() {
+  grep '$search_param' $shlogbook 
+# end main ##
 
 ## shlogbook accepts arguments! ##
 OPTIND=1 
@@ -91,6 +94,9 @@ while getopts "h?vdtm:" opt; do
     m)  log_message=$OPTARG    
       log_with_message=1
       ;;
+    s)  search_param=$OPTARG
+      search
+      exit 0
   esac
 done
 
