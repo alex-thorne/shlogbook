@@ -38,7 +38,7 @@ fi
 
 ## main ##
 main() {
-  lst_cmd=$(tail -n2 $hist_file|head -n1|sed -n -e 's/^.*;//p')
+  lst_cmd=$(tail -n2 $hist_file|head -n1|sed -n -e 's/^[^;]*;//p')
   if [[ log_with_message -eq 1 ]]; then
     if [[ -z "${log_message// }" ]]; then 
       echo "Aborting shlogging due to empty message."
@@ -68,21 +68,23 @@ main() {
 }
 
 search() {
-  grep '$search_param' $shlogbook 
-# end main ##
+  awk '/'$search_param'/{i=1+1;}/^\s*$/ {next;}{if(i){i--; print;}}' $logbook
+}
 
-## shlogbook accepts arguments! ##
 OPTIND=1 
-
 verbose=0
 detailed_logging=0
 test_run=0
 log_with_message=0
 
-while getopts "h?vdtm:" opt; do
+  while getopts "h?s:vdtm:" opt; do
   case "$opt" in
     h|\?)
       show_help
+      exit 0
+      ;;
+    s)  search_param=$OPTARG 
+      search
       exit 0
       ;;
     v)  verbose=1
@@ -94,9 +96,6 @@ while getopts "h?vdtm:" opt; do
     m)  log_message=$OPTARG    
       log_with_message=1
       ;;
-    s)  search_param=$OPTARG
-      search
-      exit 0
   esac
 done
 
