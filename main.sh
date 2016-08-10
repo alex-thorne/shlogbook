@@ -2,6 +2,11 @@
 # 07/12/2016 github.com/alex-thorne
 # simple logging utility for interactive shell sessions 
 
+#TODO: 
+# add 'undo' option that searches until the last [date] entry and removes
+# add 'dry-run' option that stages and displays your log entry and logs on confirmation
+# fix horrible main() so that output is staged in /dev/null or temp file and added together to logfile
+
 SOURCE="${BASH_SOURCE[0]}"
 while [ -h "$SOURCE" ]; do 
   DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
@@ -68,7 +73,7 @@ main() {
 }
 
 search() {
-  awk '/'$search_param'/{i=1+1;}/^\s*$/ {next;}{if(i){i--; print;}}' $logbook
+  awk '/'$search_param'/{i=1;}/^\s*$/ {next;}{if(i){i--; print;}}' $logbook
 }
 
 OPTIND=1 
